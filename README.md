@@ -264,6 +264,29 @@ Deploy and manage Presenton across your organization with versioned Helm charts 
 
 #
 
+### 📦 Container image
+
+This fork publishes the Docker image to GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/kukaraf/presentations:latest
+```
+
+| Tag | Published when |
+| --- | --- |
+| `latest` | Every push to `main` |
+| `sha-<short-sha>` | Every push to `main` and every `v*` tag |
+| `<tag>` (for example `v1.2.3`) | Every `v*` git tag |
+| `1.2.3` and `1.2` | Every `v*` git tag that is a semantic version |
+
+The image is built for `linux/amd64` and `linux/arm64` from the root `Dockerfile` by
+`.github/workflows/ghcr.yml`. The upstream container release workflow
+(`docker-release.yml`, which pushes to `ghcr.io/presenton/presenton`), the R2 sync (`sync-releaes-to-r2.yml`) and the Ubuntu 22.04
+Electron workflow (`electron-linux-ubuntu22.yml`) are disabled in this fork: they are
+manual-only and skip unless the repository is `presenton/presenton`.
+
+#
+
 ### ⚡ Running Presenton
 
   <p>

@@ -1,9 +1,9 @@
 name: Docker Release
 
+# Upstream-only: pushes to ghcr.io/presenton/presenton. Manual trigger only, and the
+# job is skipped outside the upstream repository. Forks use ghcr.yml instead.
 on:
   workflow_dispatch:
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -20,6 +20,7 @@ env:
 jobs:
   build-and-push:
     name: Build and push multi-architecture image
+    if: github.repository == 'presenton/presenton'
     runs-on: ubuntu-latest
 
     steps:

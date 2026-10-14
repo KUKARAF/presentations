@@ -1,9 +1,9 @@
 name: Electron Linux Ubuntu 22.04 Test Release
 
+# Upstream-only: publishes prerelease assets to presenton/presenton-export using
+# RELEASE_REPO_TOKEN, which forks do not have. Manual trigger only, and skipped outside
+# the upstream repository. The branch push trigger was removed.
 on:
-  push:
-    branches:
-      - electron-linux-ubuntu22
   workflow_dispatch:
 
 permissions:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build-and-release:
     name: Build Electron on Ubuntu 22.04
-    if: github.ref_name == 'electron-linux-ubuntu22'
+    if: github.repository == 'presenton/presenton' && github.ref_name == 'electron-linux-ubuntu22'
     runs-on: ubuntu-22.04
     timeout-minutes: 120
 

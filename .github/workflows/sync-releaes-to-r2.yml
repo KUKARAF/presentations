@@ -1,11 +1,19 @@
 name: Upload Release to R2
 
+# Upstream-only: uploads to the presenton Cloudflare R2 bucket using secrets that do not
+# exist in forks. Manual trigger only (pass the release tag), and skipped outside the
+# upstream repository.
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to upload (for example v1.2.3)"
+        required: true
+        type: string
 
 jobs:
   upload:
+    if: github.repository == 'presenton/presenton'
     runs-on: ubuntu-latest
     environment: sync_r2
 
@@ -18,7 +26,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir assets
-          gh release download "${{ github.event.release.tag_name }}" --dir assets --pattern '*.deb' --pattern '*.dmg' --pattern '*.exe' --pattern '*.AppImage'
+          gh release download "${{ inputs.tag_name }}" --dir assets --pattern '*.deb' --pattern '*.dmg' --pattern '*.exe' --pattern '*.AppImage'
           echo "Downloaded files:"
           ls -lh assets/
 
