@@ -43,3 +43,7 @@ class User(UserBase):
     auth_version: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")
     )
+    # "<issuer>#<sub>" for accounts created by OpenID Connect sign-in; NULL for local accounts.
+    oidc_subject: Mapped[Optional[str]] = mapped_column(
+        String(512), unique=True, nullable=True
+    )

@@ -16,7 +16,7 @@ from api.v1.auth.users import get_jwt_strategy
 from models.sql.user import User
 from services.database import async_session_maker
 from services.presenton_cloud_proxy import maybe_proxy_presenton_cloud_request
-from utils.get_env import get_can_change_keys_env, is_disable_auth_enabled
+from utils.get_env import get_can_change_keys_env, is_disable_auth_enabled, is_oidc_enabled
 from utils.user_config import update_env_with_user_config
 
 
@@ -34,6 +34,8 @@ class SessionAuthMiddleware(BaseHTTPMiddleware):
         "/api/v1/auth/setup",
         "/api/v1/auth/login",
         "/api/v1/auth/logout",
+        "/api/v1/auth/oidc/login",
+        "/api/v1/auth/oidc/callback",
     }
     _PUBLIC_AUTH_PREFIXES: tuple[str, ...] = ()
     _PUBLIC_APP_DATA_PREFIXES = (
@@ -81,7 +83,7 @@ class SessionAuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         async with async_session_maker() as session:
-            configured = bool(
+            configured = is_oidc_enabled() or bool(
                 await session.scalar(select(func.count()).select_from(User))
             )
             if not configured:

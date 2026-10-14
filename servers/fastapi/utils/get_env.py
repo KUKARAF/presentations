@@ -84,6 +84,42 @@ def is_disable_auth_enabled():
     return _is_truthy(get_disable_auth_env())
 
 
+def is_oidc_enabled() -> bool:
+    """OpenID Connect sign-in via an external identity provider (e.g. Authentik)."""
+    return _is_truthy(os.getenv("OIDC_ENABLED"))
+
+
+def get_oidc_issuer_url() -> str | None:
+    value = (os.getenv("OIDC_ISSUER_URL") or "").strip()
+    return value or None
+
+
+def get_oidc_client_id() -> str | None:
+    value = (os.getenv("OIDC_CLIENT_ID") or "").strip()
+    return value or None
+
+
+def get_oidc_client_secret() -> str | None:
+    value = (os.getenv("OIDC_CLIENT_SECRET") or "").strip()
+    return value or None
+
+
+def get_oidc_redirect_uri_env() -> str | None:
+    value = (os.getenv("OIDC_REDIRECT_URI") or "").strip()
+    return value or None
+
+
+def get_oidc_scopes() -> str:
+    value = (os.getenv("OIDC_SCOPES") or "").strip()
+    return value or "openid profile email"
+
+
+def get_oidc_admin_group() -> str | None:
+    """Optional group name; members of it get admin rights on each sign-in."""
+    value = (os.getenv("OIDC_ADMIN_GROUP") or "").strip()
+    return value or None
+
+
 def is_presenton_electron_desktop():
     """True when running inside the Presenton Electron desktop app."""
     return _is_truthy(os.getenv("PRESENTON_ELECTRON"))

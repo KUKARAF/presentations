@@ -18,6 +18,7 @@ type AuthStatus = {
   authenticated: boolean;
   username: string | null;
   role?: "admin" | "user" | null;
+  oidc_enabled?: boolean;
 };
 
 const initialStatus: AuthStatus = {
@@ -32,6 +33,7 @@ export default function AuthGate() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [oidcEnabled, setOidcEnabled] = useState(false);
   const [hasMetSplashDuration, setHasMetSplashDuration] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -85,6 +87,14 @@ export default function AuthGate() {
       return;
     }
     const params = new URLSearchParams(window.location.search);
+    if (params.get("reason") === "oidc_failed") {
+      notify.error(
+        "Sign-in failed",
+        "We could not complete sign-in with your identity provider. Please try again.",
+        { id: "auth-oidc-failed", duration: 6000 }
+      );
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     if (params.get("reason") === "unauthorized") {
       if (status.configured && !status.authenticated) {
         trackEvent(MixpanelEvent.Auth_Unauthorized_Redirect, {
@@ -114,6 +124,7 @@ export default function AuthGate() {
       }
 
       const data = (await response.json()) as AuthStatus;
+      setOidcEnabled(Boolean(data.oidc_enabled));
       trackEvent(MixpanelEvent.Auth_Status_Checked, {
         configured: Boolean(data.configured),
         authenticated: Boolean(data.authenticated),
@@ -362,6 +373,16 @@ export default function AuthGate() {
             : "This deployment is protected. Enter your credentials to open the app."}
         </p>
 
+        {oidcEnabled ? (
+          <div className="mt-7">
+            <a
+              href={getApiUrl("/api/v1/auth/oidc/login")}
+              className="flex w-full items-center justify-center rounded-[58px] border border-[#EDEEEF] bg-[#7C51F8] px-5 py-3 font-syne text-xs font-semibold text-white transition hover:bg-[#6d46e6]"
+            >
+              Sign in with Authentik
+            </a>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="mt-7 space-y-5">
           <div className="space-y-2">
             <label htmlFor="username" className="block text-sm font-medium text-[#374151]">
@@ -448,6 +469,7 @@ export default function AuthGate() {
                 : "Sign in"}
           </button>
         </form>
+        )}
       </section>
     </main>
   );

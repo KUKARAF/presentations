@@ -15,17 +15,23 @@ from api.v1.auth.users import (
 )
 from models.sql.user import User
 from services.database import get_async_session
-from utils.get_env import is_disable_auth_enabled
+from utils.get_env import is_disable_auth_enabled, is_oidc_enabled
 from api.v1.auth.config import (
     SESSION_COOKIE_NAME,
     SESSION_TTL_SECONDS,
     persist_admin_credentials,
 )
+from api.v1.auth.oidc import OIDC_ROUTER
 from api.v1.auth.presenton_oauth import PRESENTON_OAUTH_ROUTER
 
 
 API_V1_AUTH_ROUTER = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 API_V1_AUTH_ROUTER.include_router(PRESENTON_OAUTH_ROUTER)
+API_V1_AUTH_ROUTER.include_router(OIDC_ROUTER)
+
+OIDC_DISABLED_LOCAL_LOGIN_DETAIL = (
+    "Local sign-in is disabled; sign in with your identity provider"
+)
 
 
 def normalize_username(username: str) -> str:
@@ -68,13 +74,16 @@ async def get_status(
             "user_id": None,
             "role": "admin",
         }
-    configured = await _account_count(session) > 0
+    oidc_enabled = is_oidc_enabled()
+    # With OIDC the identity provider is the sign-in path, so there is no local setup step.
+    configured = oidc_enabled or await _account_count(session) > 0
     return {
         "configured": configured,
         "authenticated": user is not None,
         "username": user.username if user else None,
         "user_id": str(user.id) if user else None,
         "role": "admin" if user and user.is_superuser else ("user" if user else None),
+        "oidc_enabled": oidc_enabled,
     }
 
 
@@ -113,6 +122,8 @@ async def setup_credentials(
     request: Request,
     session: AsyncSession = Depends(get_async_session),
 ):
+    if is_oidc_enabled():
+        raise HTTPException(status_code=403, detail=OIDC_DISABLED_LOCAL_LOGIN_DETAIL)
     if await _account_count(session):
         raise HTTPException(status_code=409, detail="Credentials already configured")
 
@@ -158,6 +169,8 @@ async def login(
     request: Request,
     session: AsyncSession = Depends(get_async_session),
 ):
+    if is_oidc_enabled():
+        raise HTTPException(status_code=403, detail=OIDC_DISABLED_LOCAL_LOGIN_DETAIL)
     if not await _account_count(session):
         raise HTTPException(status_code=428, detail="Login setup is required")
     username = normalize_username(body.username)

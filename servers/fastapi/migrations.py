@@ -4,7 +4,9 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
+from alembic.util.exc import CommandError
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import SQLAlchemyError
 
 from utils.db_utils import get_database_url_and_connect_args, to_sync_sqlalchemy_url
 from utils.get_env import get_migrate_database_on_startup_env
@@ -34,7 +36,8 @@ REVISION_PRESENTON_CLOUD_PROVIDER = "c6e8f1a3b5d7"
 REVISION_SMART_MODE_BACKFILL = "d2f4a6b8c0e1"
 REVISION_TEMPLATE_V2_THEME = "e4c7a9b2d6f1"
 REVISION_UNIFIED_API_KEYS = "026c0ba8b35c"
-REVISION_HEAD = REVISION_UNIFIED_API_KEYS
+REVISION_OIDC_SUBJECT = "a3c5e7f9b1d2"
+REVISION_HEAD = REVISION_OIDC_SUBJECT
 
 
 async def migrate_database_on_startup() -> None:
@@ -44,7 +47,7 @@ async def migrate_database_on_startup() -> None:
     try:
         await asyncio.to_thread(_run_migrations)
         print("Migrations run successfully", flush=True)
-    except Exception as exc:
+    except (CommandError, SQLAlchemyError, OSError) as exc:
         print(f"Error running migrations: {exc}", flush=True)
         raise
 
@@ -67,7 +70,7 @@ def _run_migrations() -> None:
 
     try:
         command.upgrade(config, "head")
-    except Exception:
+    except (CommandError, SQLAlchemyError):
         # Safety net for edge cases; legacy DBs are stamped proactively above.
         if _is_unversioned_populated_database(database_url):
             _stamp_legacy_database_if_needed(config, database_url)
