@@ -34,6 +34,8 @@ export default function AuthGate() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [oidcEnabled, setOidcEnabled] = useState(false);
+  // A failed status check must never fall back to the local admin setup form.
+  const [statusError, setStatusError] = useState(false);
   const [hasMetSplashDuration, setHasMetSplashDuration] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -124,6 +126,7 @@ export default function AuthGate() {
       }
 
       const data = (await response.json()) as AuthStatus;
+      setStatusError(false);
       setOidcEnabled(Boolean(data.oidc_enabled));
       trackEvent(MixpanelEvent.Auth_Status_Checked, {
         configured: Boolean(data.configured),
@@ -139,6 +142,7 @@ export default function AuthGate() {
       });
     } catch (fetchError) {
       console.error(fetchError);
+      setStatusError(true);
       trackEvent(MixpanelEvent.Auth_Status_Checked, {
         configured: false,
         authenticated: false,
@@ -340,6 +344,28 @@ export default function AuthGate() {
     !hasMetSplashDuration
   ) {
     return <PresentonSplashLoader message="Preparing your workspace..." />;
+  }
+
+  if (statusError) {
+    return (
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-white p-6 font-syne">
+        <section className="w-full max-w-lg rounded-[20px] border border-[#EDEEEF] bg-[#F9F8F8] p-7 text-center sm:p-10">
+          <p className="font-syne text-lg text-[#1F1F1F]">
+            Presenton is starting up
+          </p>
+          <p className="mt-3 text-sm text-[#5F6368]">
+            We could not reach the sign-in service yet. Please try again in a moment.
+          </p>
+          <button
+            type="button"
+            onClick={() => void refreshStatus()}
+            className="mt-6 rounded-full bg-[#7A5AF8] px-6 py-3 text-sm font-semibold text-white"
+          >
+            Try again
+          </button>
+        </section>
+      </main>
+    );
   }
 
   return (
